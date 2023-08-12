@@ -32,6 +32,31 @@ def start(message):
                          )
 
 
+'''
+@bot.callback_query_handler(func=lambda callback: callback.data in ['btn4'])
+def add_event(callback):
+    inf = []
+    for question in slovik:
+        sent = bot.send_message(callback.message.chat.id, text=question)
+        bot.register_next_step_handler(sent, name)
+    event = get_and_add_event(inf)
+    print(inf)
+
+def name(message):
+    global inf
+    message_to_save = message.text
+    inf.append(message_to_save)
+'''
+# Словарь для отслеживания состояний пользователей
+user_states = {}
+
+
+# Класс для представления вопросов
+class Question:
+    def __init__(self, text, options):
+        self.text = text
+        self.options = options
+
 @bot.callback_query_handler(func=lambda callback: callback.data in ['btn1', 'btn2', 'btn3'])
 def check_callback_data(callback):
     if callback.data == 'btn1':
@@ -51,18 +76,83 @@ def check_callback_data(callback):
                          reply_markup=kb
                          )
 
+@bot.callback_query_handler(func=lambda callback: callback.data in ['btn4'])
+def start_survey(callback):
+    user_id = callback.message.chat.id
+    user_states[user_id] = 0  # Установка начального состояния
+    question = questions[user_states[user_id]]
+    bot.send_message(user_id, question.text)
+
+
 @bot.callback_query_handler(func=lambda callback: callback.data == 'btn6')
 def add_new_theme(callback):
     sent = bot.send_message(callback.message.chat.id, text='Добавте тему')
     bot.register_next_step_handler(sent, review)
 
+
+@bot.message_handler(func=lambda message: message.text in allthems())
+def handle_color(message):
+    user_id = message.chat.id
+    user_states[user_id] += 1  # Переход к следующему вопросу
+
+    if user_states[user_id] < len(questions):
+        question = questions[user_states[user_id]]
+
+    else:
+        bot.send_message(user_id, "Спасибо за участие в опросе!")
+
+
+@bot.message_handler(func=lambda message: user_states.get(message.chat.id) is not None)
+def handle_question(message):
+    user_id = message.chat.id
+    user_states[user_id] += 1
+    if user_states[user_id] < len(questions):
+        question = questions[user_states[user_id]]
+        if question.text == 'Выбирите тему':
+            active_session = db_session.create_session()
+            theme = active_session.query(Theme).filter().all()
+            kb = types.InlineKeyboardMarkup(row_width=3)
+
+            for i in theme:
+                print(i.id, allthems())
+                btn = types.InlineKeyboardButton(text=i.theme_name, callback_data=i.id)
+                kb.add(btn)
+            bot.send_message(message.chat.id,
+                             text=question.text,
+                             reply_markup=kb
+                             )
+        else:
+            bot.send_message(user_id, question.text)
+    else:
+        bot.send_message(user_id, "Спасибо за участие в опросе!")
+
+
+@bot.callback_query_handler(func=lambda callback: int(callback.data) in allthems())
+def print_all_need(callback):
+    active_session = db_session.create_session()
+    theme = active_session.query(Theme).filter(Theme.id == callback.data).first()
+    print(theme)
+    bot.send_message(callback.message.chat.id, text=theme.theme_name)
+
+
+
 def review(message):
     message_to_save = message.text
     theme = get_and_make_theme(message_to_save)
+    bot.send_message(message.chat.id, text=' Добавлена тема' + str(theme.theme_name))
     print(message_to_save)
+
 
 if __name__ == '__main__':
     db_session.global_init(
         sql_type="MYSQL"
     )
+    questions = [
+        Question("Добавте название", []),
+        Question("Добавте описание", []),
+        Question("Добавте фото(необязательно)", []),
+        Question("Добавте дату", []),
+        Question("Добавте ссылку(необязательно)е", []),
+        Question("Выбирите тему", allthems())
+    ]
     bot.polling()

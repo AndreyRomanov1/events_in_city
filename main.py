@@ -14,9 +14,10 @@ bot = telebot.TeleBot(config.BOT_TOKEN)
 
 @bot.message_handler(commands=['start'])
 def start(message):
+    """Первый запуск бота у пользователя, регистрация пользователя"""
     tg_id = message.from_user.id
     user = get_or_create_user(telegram_id=tg_id)
-    kb = create_main_keyboard(admin_level=user.admin_level)
+    kb = create_main_keyboard(user=user)
     text = texts.START_TEXT_FOR_USERS if not user.admin_level else texts.START_TEXT_FOR_ADMIN
     bot.send_message(message.chat.id, text=text, reply_markup=kb)
 
@@ -41,12 +42,6 @@ class Question:
         self.options = options
 
 
-# @bot.callback_query_handler(
-#     func=lambda callback: callback.data in ['btn_3_subscribe_to_mailing'])
-# def check_callback_data(callback):
-#     if callback.data == 'btn_3_subscribe_to_mailing':
-
-
 @bot.callback_query_handler(func=lambda callback: callback.data == 'btn_1_event_today')
 def events_of_today(callback):
     """Отправляет пользователю список постов с мероприятиями на сегодня"""
@@ -63,7 +58,7 @@ def events_of_week(callback):
         bot.send_message(callback.message.chat.id, post.print_post())
 
 
-@bot.callback_query_handler(func=lambda callback: callback.data == 'btn_3_subscribe_to_mailing')
+@bot.callback_query_handler(func=lambda callback: callback.data == 'btn_3_subscribe_to_theme_for_mailing')
 def add_theme_to_mailing(callback):
     """Добавление темы для рассылки"""
     active_session = db_session.create_session()
@@ -72,7 +67,6 @@ def add_theme_to_mailing(callback):
     btn = types.InlineKeyboardButton(text='Выйти', callback_data='out')
     kb.add(btn)
     for theme in themes:
-        print(theme.theme_name)
         btn = types.InlineKeyboardButton(text=theme.theme_name, callback_data=f'btnTheme_{theme.id}')
         kb.add(btn)
     bot.send_message(callback.message.chat.id,
@@ -165,6 +159,15 @@ def review(message):
     theme = get_and_make_theme(message_to_save)
     bot.send_message(message.chat.id, text=' Добавлена тема: ' + str(theme.theme_name))
     print(message_to_save)
+
+
+@bot.message_handler(func=lambda message: message.text and message.text.startswith("/admin "))
+def create_new_admin(message):
+    """Добавление уровня администратора при верном реферальном коде"""
+    user = get_or_create_user(telegram_id=message.from_user.id)
+    referral_code = message.text[len("/admin "):]
+    message = create_new_admin(referral_code=referral_code, user=user)
+    bot.send_message(message.chat.id, text=message)
 
 
 def bot_thread():

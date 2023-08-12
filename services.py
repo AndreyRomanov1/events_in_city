@@ -64,21 +64,29 @@ def get_list_all_theme_ids() -> list[int]:
     return themes
 
 
-def create_main_keyboard(admin_level: int) -> InlineKeyboardMarkup:
+def create_main_keyboard(user: User) -> InlineKeyboardMarkup:
     kb = types.InlineKeyboardMarkup(row_width=3)
     btn_1_event_today = types.InlineKeyboardButton(text='Мероприятия на сегодня', callback_data='btn_1_event_today')
     btn_2_event_week = types.InlineKeyboardButton(text='Мероприятия на неделю', callback_data='btn_2_event_week')
-    btn_3_subscribe_to_mailing = types.InlineKeyboardButton(text='Подписаться на рассылку',
-                                                            callback_data='btn_3_subscribe_to_mailing')
-    btn_4_add_event = types.InlineKeyboardButton(text='Добавить мероприятие', callback_data='btn_4_add_event')
-    btn_5_check_statistics = types.InlineKeyboardButton(text='Посмотреть статистику',
-                                                        callback_data='btn_5_check_statistics')
+
+    btn_8_mailing = types.InlineKeyboardButton(text='Рассылка', callback_data='btn_8_mailing')
+    btn_3_subscribe_to_theme_for_mailing = types.InlineKeyboardButton(text='Добавить тему для рассылки',
+                                                                      callback_data='btn_3_subscribe_to_theme_for_mailing')
     btn_6_add_theme = types.InlineKeyboardButton(text='Добавить тему', callback_data='btn_6_add_theme')
-    if admin_level == 0:
-        kb.add(btn_1_event_today, btn_2_event_week, btn_3_subscribe_to_mailing)
-    elif admin_level > 0:
-        kb.add(btn_1_event_today, btn_2_event_week, btn_3_subscribe_to_mailing, btn_4_add_event, btn_5_check_statistics,
-               btn_6_add_theme)
+    btn_4_add_event = types.InlineKeyboardButton(text='Добавить мероприятие', callback_data='btn_4_add_event')
+
+    btn_7_add_admin_1 = types.InlineKeyboardButton(text='Добавить админа 1 уровня',
+                                                   callback_data='btn_7_add_admin_1')
+    btn_9_add_admin_2 = types.InlineKeyboardButton(text='Добавить админа 2 уровня',
+                                                   callback_data='btn_9_add_admin_2')
+
+    kb.add(btn_1_event_today, btn_2_event_week)
+    kb.add(btn_8_mailing, btn_3_subscribe_to_theme_for_mailing)
+
+    if user.admin_level >= 1:
+        kb.add(btn_6_add_theme, btn_4_add_event)
+    if user.admin_level >= 2:
+        kb.add(btn_7_add_admin_1,btn_9_add_admin_2)
     return kb
 
 
@@ -99,3 +107,19 @@ def add_theme_for_user(user_id, theme_id):
             active_session.query(MailingList).filter(MailingList.user_id == user_id, MailingList.theme_id == theme_id))[
             0]
         return mailingList
+
+
+def create_new_admin(referral_code: str, user: User) -> str:
+    active_session = db_session.create_session()
+    referral_user = active_session.query(User).filter(User.referral_code == referral_code)
+    if list(referral_user):
+        referral_user: User = referral_user[0]
+    else:
+        return "Неверный код для приглашения"
+    if user.admin_level < int(referral_code.split("_")[1]):
+        referral_user.referral_code = None
+        user.admin_level = int(referral_code.split("_")[1])
+        user.referral_user = referral_user.id
+        return f"Теперь вы администратор {referral_code.split('_')[1]} уровня"
+    else:
+        return "Вы уже администратор этого уровня или выше"

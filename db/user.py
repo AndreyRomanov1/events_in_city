@@ -12,7 +12,7 @@ class User(SqlAlchemyBase):
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
     telegram_id = sqlalchemy.Column(sqlalchemy.Integer, unique=True)
     mailing_frequency = sqlalchemy.Column(sqlalchemy.Integer, default=0)
-    is_admin = sqlalchemy.Column(sqlalchemy.BOOLEAN, default=False)
+    admin_level = sqlalchemy.Column(sqlalchemy.Integer, default=0)
 
     def __repr__(self):
         return f"User_{self.id}_{self.telegram_id}"

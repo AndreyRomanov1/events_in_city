@@ -1,5 +1,8 @@
 from datetime import datetime
 
+from telebot import types
+from telebot.types import InlineKeyboardMarkup
+
 from db import db_session
 from db.post import Post
 from db.theme import Theme
@@ -54,10 +57,25 @@ def get_and_add_event(user_id: int, name_event: str, description_event: str, ima
     db_sess.commit()
 
 
-def allthems():
+def get_list_all_theme_ids() -> list[int]:
     active_session = db_session.create_session()
-    themes = active_session.query(Theme).filter().all()
-    themelist = []
-    for i in themes:
-        themelist.append(i.id)
-    return themelist
+    themes = list(map(lambda x: x.id, active_session.query(Theme).filter().all()))
+    return themes
+
+
+def create_main_keyboard(admin_level: int) -> InlineKeyboardMarkup:
+    kb = types.InlineKeyboardMarkup(row_width=3)
+    btn_1_event_today = types.InlineKeyboardButton(text='Мероприятия на сегодня', callback_data='btn_1_event_today')
+    btn_2_event_week = types.InlineKeyboardButton(text='Мероприятия на неделю', callback_data='btn_2_event_week')
+    btn_3_subscribe_to_mailing = types.InlineKeyboardButton(text='Подписаться на рассылку',
+                                                            callback_data='btn_3_subscribe_to_mailing')
+    btn_4_add_event = types.InlineKeyboardButton(text='Добавить мероприятие', callback_data='btn_4_add_event')
+    btn_5_check_statistics = types.InlineKeyboardButton(text='Посмотреть статистику',
+                                                        callback_data='btn_5_check_statistics')
+    btn_6_add_theme = types.InlineKeyboardButton(text='Добавить тему', callback_data='btn_6_add_theme')
+    if admin_level == 0:
+        kb.add(btn_1_event_today, btn_2_event_week, btn_3_subscribe_to_mailing)
+    elif admin_level > 0:
+        kb.add(btn_1_event_today, btn_2_event_week, btn_3_subscribe_to_mailing, btn_4_add_event, btn_5_check_statistics,
+               btn_6_add_theme)
+    return kb

@@ -144,22 +144,11 @@ def print_all_need(callback):
 def review(message):
     message_to_save = message.text
     theme = get_and_make_theme(message_to_save)
-    bot.send_message(message.chat.id, text=' Добавлена тема' + str(theme.theme_name))
+    bot.send_message(message.chat.id, text=' Добавлена тема: ' + str(theme.theme_name))
     print(message_to_save)
 
 
 def bot_thread():
-    db_session.global_init(
-        sql_type="MYSQL"
-    )
-    questions = [
-        Question("Добавте название", []),
-        Question("Добавте описание", []),
-        Question("Добавте фото(необязательно)", []),
-        Question("Добавте дату", []),
-        Question("Добавте ссылку(необязательно)е", []),
-        Question("Выбирите тему", allthems())
-    ]
     bot.polling()
     bot.polling(none_stop=True)
 
@@ -171,6 +160,17 @@ def scheduler_thread():
 
 
 if __name__ == '__main__':
+    db_session.global_init(
+        sql_type="MYSQL"
+    )
+    questions = [
+        Question("Добавте название", []),
+        Question("Добавте описание", []),
+        Question("Добавте фото(необязательно)", []),
+        Question("Добавте дату", []),
+        Question("Добавте ссылку(необязательно)е", []),
+        Question("Выбирите тему", allthems())
+    ]
     scheduler_thread = threading.Thread(target=scheduler_thread)
     bot_thread = threading.Thread(target=bot_thread)
 

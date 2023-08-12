@@ -1,4 +1,5 @@
 import time
+from datetime import datetime
 
 import telebot
 from telebot import types
@@ -6,6 +7,7 @@ import schedule
 import threading
 
 import config
+from mailing_services import create_dict_of_users_and_their_posts, get_users_for_mailing, get_posts_for_period
 from services import *
 
 bot = telebot.TeleBot(config.BOT_TOKEN)
@@ -81,11 +83,32 @@ def scheduler_thread():
         time.sleep(1)
 
 
-def send_weekly_message():
-    chat_id = '880739918'
-    message = "Привет! Еженедельное сообщение."
-    bot.send_message(chat_id, message)
+def send_daily_message():
+    mailing(
+        type_mailing=1,
+        period_length_in_days=1
+    )
 
+
+def send_weekly_message():
+    mailing(
+        type_mailing=2,
+        period_length_in_days=7
+    )
+
+
+def mailing(type_mailing: int, period_length_in_days: int):
+    dict_of_users_and_their_posts = create_dict_of_users_and_their_posts(
+        users_for_mailing=get_users_for_mailing(type_mailing=type_mailing),
+        all_posts=get_posts_for_period(start_date_of_period=datetime.now(), period_length_in_days=period_length_in_days)
+    )
+    for user, posts in dict_of_users_and_their_posts.items():
+        for post in posts:
+            bot.send_message(user.telegram_id, post.print_post())
+
+
+schedule.every().monday.at("10:00").do(send_weekly_message)
+schedule.every().day.at("10:00").do(send_daily_message)
 
 if __name__ == '__main__':
     scheduler_thread = threading.Thread(target=scheduler_thread)

@@ -17,10 +17,11 @@ class User(SqlAlchemyBase):
     def __repr__(self):
         return f"User_{self.id}_{self.telegram_id}"
 
-    def get_themes_for_mailing(self) -> list:
+    def get_themes_for_mailing(self) -> set:
         active_session = db_session.create_session()
         users_themes = list(active_session.query(MailingList).filter(
             MailingList.user_id == self.id
         ).all())
+        users_themes = set(map(lambda x: x.theme_id, users_themes))
         return users_themes
 

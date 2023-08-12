@@ -6,6 +6,7 @@ from db import db_session
 from db.db_session import SqlAlchemyBase
 from sqlalchemy.orm import relationship
 
+from db.theme import Theme
 from db.user import User
 
 
@@ -31,3 +32,12 @@ class Post(SqlAlchemyBase):
         active_session = db_session.create_session()
         user = active_session.query(User).get(self.user_id)
         return user
+
+    def get_theme(self) -> Theme:
+        active_session = db_session.create_session()
+        theme = active_session.query(Theme).get(self.theme_id)
+        return theme
+
+    def print_post(self) -> str:
+        massage = f"{self.title}\nТема: {self.get_theme()} Дата: {self.datetime_of_event.strftime('%d.%m.%Y %H:%M')}\n {self.text} \nПодробнее: {self.url}"
+        return massage

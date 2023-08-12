@@ -1,5 +1,9 @@
+import time
+
 import telebot
 from telebot import types
+import schedule
+import threading
 
 import config
 from services import *
@@ -51,18 +55,51 @@ def check_callback_data(callback):
                          reply_markup=kb
                          )
 
+
 @bot.callback_query_handler(func=lambda callback: callback.data == 'btn6')
 def add_new_theme(callback):
     sent = bot.send_message(callback.message.chat.id, text='Добавте тему')
     bot.register_next_step_handler(sent, review)
+
 
 def review(message):
     message_to_save = message.text
     theme = get_and_make_theme(message_to_save)
     print(message_to_save)
 
+
 if __name__ == '__main__':
     db_session.global_init(
         sql_type="MYSQL"
     )
     bot.polling()
+
+
+def bot_thread():
+    bot.polling(none_stop=True)
+
+
+def scheduler_thread():
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
+
+def send_weekly_message():
+    chat_id = '880739918'
+    message = "Привет! Еженедельное сообщение."
+    bot.send_message(chat_id, message)
+
+# schedule.every(5).seconds.do(send_weekly_message)
+
+if __name__ == '__main__':
+    db_session.global_init(
+        sql_type="MYSQL"
+    )
+    bot_thread = threading.Thread(target=bot_thread)
+    scheduler_thread = threading.Thread(target=scheduler_thread)
+
+    bot_thread.start()
+    scheduler_thread.start()
+
+    bot_thread.join()
+    scheduler_thread.join()

@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from db import db_session
 from db.post import Post
 from db.theme import Theme
@@ -35,15 +37,16 @@ def get_and_make_theme(theme_name: str) -> Theme:
         return theme
 
 
-def get_and_add_event(name_event: str, description_event: str, image_event, theme_id: int, user_id: int, date,
-                      url):
+def get_and_add_event(user_id: int, name_event: str, description_event: str, image_event, date,
+                      url, theme_id: int):
     post = Post()
-    post.title = description_event
-    post.text = name_event
-    post.image = image_event
+    post.title = name_event
+    post.text = description_event
+    # post.image = image_event
     post.theme_id = theme_id
     post.user_id = user_id
-    post.created_at = date
+    date = date.split('.')
+    post.datetime_of_event = datetime(year=int(date[-1]), month=int(date[-2]), day=int(date[-3]), hour=0, minute=0)
     post.url = url
     db_sess = db_session.create_session()
     db_sess.add(post)

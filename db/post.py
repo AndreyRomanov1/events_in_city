@@ -39,5 +39,6 @@ class Post(SqlAlchemyBase):
         return theme
 
     def print_post(self) -> str:
+        """Формирует сообщение для мессенджера"""
         massage = f"{self.title}\nТема: {self.get_theme()} Дата: {self.datetime_of_event.strftime('%d.%m.%Y %H:%M')}\n {self.text} \nПодробнее: {self.url}"
         return massage

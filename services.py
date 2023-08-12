@@ -7,6 +7,7 @@ from db.user import User
 
 
 def get_or_create_user(telegram_id: int) -> User:
+    """Возвращает пользователя по telegram_id и создаёт его, если его нет"""
     active_session = db_session.create_session()
     user = active_session.query(User).filter(User.telegram_id == telegram_id)
     if list(user):

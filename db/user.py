@@ -6,7 +6,7 @@ from db.mailing_list import MailingList
 
 
 class User(SqlAlchemyBase):
-    """Пользователи телеграм бота"""
+    """Пользователи бота"""
     __tablename__ = "user"
 
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
@@ -18,6 +18,7 @@ class User(SqlAlchemyBase):
         return f"User_{self.id}_{self.telegram_id}"
 
     def get_themes_for_mailing(self) -> set:
+        """Возвращает множество идентификаторов тем для рассылки этому пользователю"""
         active_session = db_session.create_session()
         users_themes = list(active_session.query(MailingList).filter(
             MailingList.user_id == self.id

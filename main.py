@@ -130,17 +130,34 @@ def review(message):
     print(message_to_save)
 
 
+def events_of_today(callback):
+    """Отправляет пользователю список постов с мероприятиями на сегодня"""
+    all_posts = get_posts_for_period(start_date_of_period=datetime.now(), period_length_in_days=1)
+    for post in all_posts:
+        bot.send_message(callback.message.chat.id, post.print_post())
+
+
+def events_of_week(callback):
+    """Отправляет пользователю список постов с мероприятиями на неделю вперёд"""
+    all_posts = get_posts_for_period(start_date_of_period=datetime.now(), period_length_in_days=7)
+    for post in all_posts:
+        bot.send_message(callback.message.chat.id, post.print_post())
+
+
 def bot_thread():
+    """Поток телеграм бота"""
     bot.polling(none_stop=True)
 
 
 def scheduler_thread():
+    """Поток для выполнения рассылок по расписанию"""
     while True:
         schedule.run_pending()
         time.sleep(1)
 
 
 def send_daily_message():
+    """Ежедневная рассылка"""
     mailing(
         type_mailing=1,
         period_length_in_days=1
@@ -148,6 +165,7 @@ def send_daily_message():
 
 
 def send_weekly_message():
+    """Еженедельная рассылка"""
     mailing(
         type_mailing=2,
         period_length_in_days=7
@@ -155,6 +173,7 @@ def send_weekly_message():
 
 
 def mailing(type_mailing: int, period_length_in_days: int):
+    """Рассылает всем пользователям списки постов с мероприятиями по интересным для них темам"""
     dict_of_users_and_their_posts = create_dict_of_users_and_their_posts(
         users_for_mailing=get_users_for_mailing(type_mailing=type_mailing),
         all_posts=get_posts_for_period(start_date_of_period=datetime.now(), period_length_in_days=period_length_in_days)

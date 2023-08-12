@@ -2,3 +2,4 @@ python-dotenv
 SQLAlchemy
 PyMySQL
 pyTelegramBotAPI
+schedule

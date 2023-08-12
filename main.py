@@ -1,5 +1,9 @@
+import time
+
 import telebot
 from telebot import types
+import schedule
+import threading
 
 import config
 from services import *
@@ -76,6 +80,7 @@ def check_callback_data(callback):
                          reply_markup=kb
                          )
 
+
 @bot.callback_query_handler(func=lambda callback: callback.data in ['btn4'])
 def start_survey(callback):
     user_id = callback.message.chat.id
@@ -143,7 +148,7 @@ def review(message):
     print(message_to_save)
 
 
-if __name__ == '__main__':
+def bot_thread():
     db_session.global_init(
         sql_type="MYSQL"
     )
@@ -156,3 +161,21 @@ if __name__ == '__main__':
         Question("Выбирите тему", allthems())
     ]
     bot.polling()
+    bot.polling(none_stop=True)
+
+
+def scheduler_thread():
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
+
+
+if __name__ == '__main__':
+    scheduler_thread = threading.Thread(target=scheduler_thread)
+    bot_thread = threading.Thread(target=bot_thread)
+
+    scheduler_thread.start()
+    bot_thread.start()
+
+    scheduler_thread.join()
+    bot_thread.join()

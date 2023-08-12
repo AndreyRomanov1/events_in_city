@@ -14,6 +14,7 @@ class Post(SqlAlchemyBase):
     __tablename__ = "post"
 
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
+    title = sqlalchemy.Column(sqlalchemy.String(1000), nullable=False)
     text = sqlalchemy.Column(sqlalchemy.String(100000), nullable=False)
     title = sqlalchemy.Column(sqlalchemy.String(100000), nullable=False)
     image = sqlalchemy.Column(sqlalchemy.LargeBinary, nullable=True)

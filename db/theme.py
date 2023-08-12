@@ -10,4 +10,4 @@ class Theme(SqlAlchemyBase):
     theme_name = sqlalchemy.Column(sqlalchemy.String(100000), nullable=False)
 
     def __repr__(self):
-        return f"Theme_{self.id}_{self.theme_name}"
+        return f"Theme_{self.id}"

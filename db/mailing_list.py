@@ -11,4 +11,4 @@ class MailingList(SqlAlchemyBase):
     user_id = sqlalchemy.Column(sqlalchemy.Integer)
 
     def __repr__(self):
-        return f"Post_{self.id}_{self.text[:min(len(self.text), 30)]}_{self.date_time_of_event}"
+        return f"MailingList_{self.id}_{self.theme_id}"

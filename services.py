@@ -4,6 +4,7 @@ from telebot import types
 from telebot.types import InlineKeyboardMarkup
 
 from db import db_session
+from db.mailing_list import MailingList
 from db.post import Post
 from db.theme import Theme
 from db.user import User
@@ -79,3 +80,22 @@ def create_main_keyboard(admin_level: int) -> InlineKeyboardMarkup:
         kb.add(btn_1_event_today, btn_2_event_week, btn_3_subscribe_to_mailing, btn_4_add_event, btn_5_check_statistics,
                btn_6_add_theme)
     return kb
+
+
+def add_theme_for_user(user_id, theme_id):
+    active_session = db_session.create_session()
+    mailingList = active_session.query(MailingList).filter(MailingList.user_id == user_id,
+                                                           MailingList.theme_id == theme_id)
+    if list(mailingList):
+        return mailingList[0]
+    else:
+        new_mailingList = MailingList(
+            user_id=user_id,
+            theme_id=theme_id
+        )
+        active_session.add(new_mailingList)
+        active_session.commit()
+        mailingList = list(
+            active_session.query(MailingList).filter(MailingList.user_id == user_id, MailingList.theme_id == theme_id))[
+            0]
+        return mailingList

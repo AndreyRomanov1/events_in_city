@@ -21,6 +21,15 @@ def start(message):
     bot.send_message(message.chat.id, text=text, reply_markup=kb)
 
 
+@bot.callback_query_handler(func=lambda callback: callback.data == 'out')
+def start(callback):
+    tg_id = callback.message.chat.id
+    user = get_or_create_user(telegram_id=tg_id)
+    kb = create_main_keyboard(admin_level=user.admin_level)
+    text = texts.START_TEXT_FOR_USERS if not user.admin_level else texts.START_TEXT_FOR_ADMIN
+    bot.send_message(callback.message.chat.id, text=text, reply_markup=kb)
+
+
 user_states = {}  # Словарь для отслеживания состояний пользователей
 
 
@@ -60,6 +69,31 @@ def add_theme_to_mailing(callback):
     active_session = db_session.create_session()
     themes = active_session.query(Theme).filter().all()
     kb = types.InlineKeyboardMarkup(row_width=3)
+    btn = types.InlineKeyboardButton(text='Выйти', callback_data='out')
+    kb.add(btn)
+    for theme in themes:
+        print(theme.theme_name)
+        btn = types.InlineKeyboardButton(text=theme.theme_name, callback_data=f'btnTheme_{theme.id}')
+        kb.add(btn)
+    bot.send_message(callback.message.chat.id,
+                     text='Выберите интересующую тему для рассылки',
+                     reply_markup=kb
+                     )
+
+
+@bot.callback_query_handler(func=lambda callback: 'btnTheme_' in callback.data)
+def add_theme(callback):
+    add_theme_for_user(callback.message.chat.id, int(str(callback.data).split('_')[-1]))
+    active_session = db_session.create_session()
+    themes = active_session.query(Theme).filter().all()
+    active_session = db_session.create_session()
+    us_themes = active_session.query(MailingList).filter(MailingList.user_id == callback.message.chat.id).all()
+    for i in us_themes:
+        print(i.theme_id)
+        themes.remove('Theme_' + str(i.theme_id))
+    kb = types.InlineKeyboardMarkup(row_width=3)
+    btn = types.InlineKeyboardButton(text='Выйти', callback_data='out')
+    kb.add(btn)
     for theme in themes:
         print(theme.theme_name)
         btn = types.InlineKeyboardButton(text=theme.theme_name, callback_data=f'btnTheme_{theme.id}')

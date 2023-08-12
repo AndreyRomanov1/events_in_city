@@ -10,8 +10,8 @@ class User(SqlAlchemyBase):
     __tablename__ = "user"
 
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
-    telegram_id = sqlalchemy.Column(sqlalchemy.Integer)
-    mailing_frequency = sqlalchemy.Column(sqlalchemy.Integer)
+    telegram_id = sqlalchemy.Column(sqlalchemy.Integer, unique=True)
+    mailing_frequency = sqlalchemy.Column(sqlalchemy.Integer, default=0)
     is_admin = sqlalchemy.Column(sqlalchemy.BOOLEAN, default=False)
 
     def __repr__(self):

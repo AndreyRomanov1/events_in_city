@@ -41,6 +41,6 @@ def check_callback_data(callback):
 
 if __name__ == '__main__':
     db_session.global_init(
-        sql_type="sqlite"
+        sql_type="MYSQL"
     )
     bot.polling()

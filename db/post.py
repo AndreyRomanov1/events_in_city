@@ -22,7 +22,7 @@ class Post(SqlAlchemyBase):
 
     created_at = sqlalchemy.Column(sqlalchemy.DateTime, default=datetime.utcnow)
     datetime_of_event = sqlalchemy.Column(sqlalchemy.DateTime, nullable=False)
-    url = sqlalchemy.Column(sqlalchemy.String, nullable=True)
+    url = sqlalchemy.Column(sqlalchemy.String(1000), nullable=True)
 
     def __repr__(self):
         return f"Post_{self.id}_{self.text[:min(len(self.text), 30)]}_{self.date_time_of_event}"

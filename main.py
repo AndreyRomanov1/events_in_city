@@ -39,11 +39,13 @@ def check_callback_data(callback):
     elif callback.data == 'btn2':
         bot.send_message(callback.message.chat.id, 'weakly_news')
     elif callback.data == 'btn3':
+        active_session = db_session.create_session()
+        theme = active_session.query(Theme).filter().all()
         kb = types.InlineKeyboardMarkup(row_width=3)
-        btn4 = types.InlineKeyboardButton(text='Спорт', callback_data='sport')
-        btn5 = types.InlineKeyboardButton(text='Музыка', callback_data='music')
-        btn6 = types.InlineKeyboardButton(text='Экология', callback_data='eco')
-        kb.add(btn4, btn5, btn6)
+        for i in theme:
+            print(i.theme_name)
+            btn = types.InlineKeyboardButton(text=i.theme_name, callback_data='btnx')
+            kb.add(btn)
         bot.send_message(callback.message.chat.id,
                          text='Выберите интересующие темы',
                          reply_markup=kb

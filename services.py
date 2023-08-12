@@ -18,17 +18,17 @@ def get_or_create_user(telegram_id: int) -> User:
         return user
 
 
-def get_and_make_theme(theme: str) -> Theme:
+def get_and_make_theme(theme_name: str) -> Theme:
     active_session = db_session.create_session()
-    theme = active_session.query(Theme).filter(Theme.theme_name == theme)
+    theme = active_session.query(Theme).filter(Theme.theme_name == theme_name)
     if list(theme):
         return theme[0]
     else:
         new_theme = Theme(
-            theme_name=theme,
+            theme_name=theme_name,
         )
         print(new_theme)
         active_session.add(new_theme)
         active_session.commit()
-        theme = list(active_session.query(Theme).filter(Theme.theme_name == theme))[0]
+        theme = list(active_session.query(Theme).filter(Theme.theme_name == theme_name))[0]
         return theme

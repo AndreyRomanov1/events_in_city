@@ -1,8 +1,8 @@
-import config
-from services import *
-from db import db_session
 import telebot
 from telebot import types
+
+import config
+from services import *
 
 bot = telebot.TeleBot(config.BOT_TOKEN)
 
@@ -26,9 +26,9 @@ def start(message):
     else:
         kb.add(btn1, btn2, btn3)
         bot.send_message(message.chat.id,
-                     text='Привет! Я телеграм бот "". Я могу делать рассылки про события в Екатеринбурге или могу рассказать про то, какие мероприятия будут в ближайшие дни. Что ты хочешь сделать?',
-                     reply_markup=kb
-                     )
+                         text='Привет! Я телеграм бот "". Я могу делать рассылки про события в Екатеринбурге или могу рассказать про то, какие мероприятия будут в ближайшие дни. Что ты хочешь сделать?',
+                         reply_markup=kb
+                         )
 
 
 @bot.callback_query_handler(func=lambda callback: callback.data)

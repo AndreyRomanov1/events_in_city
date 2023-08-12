@@ -9,11 +9,10 @@ class MailingList(SqlAlchemyBase):
 
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
 
-    theme_id = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("theme.id"))
-    theme = relationship("theme", back_populates="theme")
+    theme_id = sqlalchemy.Column(sqlalchemy.Integer)
 
-    user_id = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("user.id"))
-    user = relationship("user", back_populates="user")
+
+    user_id = sqlalchemy.Column(sqlalchemy.Integer)
 
     def __repr__(self):
         return f"Post_{self.id}_{self.text[:min(len(self.text), 30)]}_{self.date_time_of_event}"

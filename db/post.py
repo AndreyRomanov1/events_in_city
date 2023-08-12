@@ -14,11 +14,9 @@ class Post(SqlAlchemyBase):
     mailing_frequency = sqlalchemy.Column(sqlalchemy.Integer, default=0)
     image = sqlalchemy.Column(sqlalchemy.LargeBinary, nullable=True)
 
-    theme_id = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("theme.id"))
-    theme = relationship("theme", back_populates="theme")
+    theme_id = sqlalchemy.Column(sqlalchemy.Integer)
 
-    user_id = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("user.id"))
-    user = relationship("user", back_populates="user")
+    user_id = sqlalchemy.Column(sqlalchemy.Integer)
 
     created_at = sqlalchemy.Column(sqlalchemy.DateTime, default=datetime.utcnow)
     datetime_of_event = sqlalchemy.Column(sqlalchemy.DateTime, nullable=False)

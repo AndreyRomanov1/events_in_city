@@ -1,4 +1,5 @@
 from db import db_session
+from db.post import Post
 from db.theme import Theme
 from db.user import User
 
@@ -32,3 +33,27 @@ def get_and_make_theme(theme_name: str) -> Theme:
         active_session.commit()
         theme = list(active_session.query(Theme).filter(Theme.theme_name == theme_name))[0]
         return theme
+
+
+def get_and_add_event(name_event: str, description_event: str, image_event, theme_id: int, user_id: int, date,
+                      url):
+    post = Post()
+    post.title = description_event
+    post.text = name_event
+    post.image = image_event
+    post.theme_id = theme_id
+    post.user_id = user_id
+    post.created_at = date
+    post.url = url
+    db_sess = db_session.create_session()
+    db_sess.add(post)
+    db_sess.commit()
+
+
+def allthems():
+    active_session = db_session.create_session()
+    themes = active_session.query(Theme).filter().all()
+    themelist = []
+    for i in themes:
+        themelist.append(i.id)
+    return themelist

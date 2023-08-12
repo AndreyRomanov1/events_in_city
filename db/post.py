@@ -17,7 +17,7 @@ class Post(SqlAlchemyBase):
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
     title = sqlalchemy.Column(sqlalchemy.String(1000), nullable=False)
     text = sqlalchemy.Column(sqlalchemy.String(100000), nullable=False)
-    mailing_frequency = sqlalchemy.Column(sqlalchemy.Integer, default=0)
+    title = sqlalchemy.Column(sqlalchemy.String(100000), nullable=False)
     image = sqlalchemy.Column(sqlalchemy.LargeBinary, nullable=True)
     theme_id = sqlalchemy.Column(sqlalchemy.Integer)
     user_id = sqlalchemy.Column(sqlalchemy.Integer)

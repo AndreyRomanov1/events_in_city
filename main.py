@@ -26,7 +26,7 @@ def start(message):
 def start(callback):
     tg_id = callback.message.chat.id
     user = get_or_create_user(telegram_id=tg_id)
-    kb = create_main_keyboard(admin_level=user.admin_level)
+    kb = create_main_keyboard(user=user)
     text = texts.START_TEXT_FOR_USERS if not user.admin_level else texts.START_TEXT_FOR_ADMIN
     bot.send_message(callback.message.chat.id, text=text, reply_markup=kb)
 
@@ -62,12 +62,20 @@ def events_of_week(callback):
 def add_theme_to_mailing(callback):
     """Добавление темы для рассылки"""
     active_session = db_session.create_session()
-    themes = active_session.query(Theme).filter().all()
+    themes_0 = active_session.query(Theme).filter().all()
+    themes_dict = {}
+    for theme in themes_0:
+        themes_dict[theme.id] = theme.theme_name
+    themes = set(map(lambda x: x.id, themes_0))
+    user = get_or_create_user(callback.message.chat.id)
+    us_theme = user.get_themes_for_mailing()
+    print(user, themes, us_theme)
+    themes -= us_theme
     kb = types.InlineKeyboardMarkup(row_width=3)
     btn = types.InlineKeyboardButton(text='Выйти', callback_data='out')
     kb.add(btn)
     for theme in themes:
-        btn = types.InlineKeyboardButton(text=theme.theme_name, callback_data=f'btnTheme_{theme.id}')
+        btn = types.InlineKeyboardButton(text=themes_dict[theme], callback_data=f'btnTheme_{theme}')
         kb.add(btn)
     bot.send_message(callback.message.chat.id,
                      text='Выберите интересующую тему для рассылки',
@@ -77,20 +85,24 @@ def add_theme_to_mailing(callback):
 
 @bot.callback_query_handler(func=lambda callback: 'btnTheme_' in callback.data)
 def add_theme(callback):
-    add_theme_for_user(callback.message.chat.id, int(str(callback.data).split('_')[-1]))
+    user = get_or_create_user(callback.message.chat.id)
+
+    add_theme_for_user(user.id, int(str(callback.data).split('_')[-1]))
     active_session = db_session.create_session()
-    themes = active_session.query(Theme).filter().all()
-    active_session = db_session.create_session()
-    us_themes = active_session.query(MailingList).filter(MailingList.user_id == callback.message.chat.id).all()
-    for i in us_themes:
-        print(i.theme_id)
-        themes.remove('Theme_' + str(i.theme_id))
+    themes_0 = active_session.query(Theme).filter().all()
+    themes_dict = {}
+    for theme in themes_0:
+        themes_dict[theme.id] = theme.theme_name
+    themes = set(map(lambda x: x.id, themes_0))
+    user = get_or_create_user(callback.message.chat.id)
+    us_theme = user.get_themes_for_mailing()
+    print(user, themes, us_theme)
+    themes -= us_theme
     kb = types.InlineKeyboardMarkup(row_width=3)
     btn = types.InlineKeyboardButton(text='Выйти', callback_data='out')
     kb.add(btn)
     for theme in themes:
-        print(theme.theme_name)
-        btn = types.InlineKeyboardButton(text=theme.theme_name, callback_data=f'btnTheme_{theme.id}')
+        btn = types.InlineKeyboardButton(text=themes_dict[theme], callback_data=f'btnTheme_{theme}')
         kb.add(btn)
     bot.send_message(callback.message.chat.id,
                      text='Выберите интересующую тему для рассылки',
@@ -149,7 +161,6 @@ def print_all_need(callback):
     theme = active_session.query(Theme).filter(Theme.id == callback.data).first()
     data.append(theme.id)
     bot.send_message(callback.message.chat.id, text=theme.theme_name)
-    print(data)
     get_and_add_event(*data)
     bot.send_message(callback.message.chat.id, text='Ваше мероприятие было добавлено')
 
@@ -158,7 +169,6 @@ def review(message):
     message_to_save = message.text
     theme = get_and_make_theme(message_to_save)
     bot.send_message(message.chat.id, text=' Добавлена тема: ' + str(theme.theme_name))
-    print(message_to_save)
 
 
 @bot.message_handler(func=lambda message: message.text and message.text.startswith("/admin "))

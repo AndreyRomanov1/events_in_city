@@ -35,7 +35,6 @@ def get_and_make_theme(theme_name: str) -> Theme:
         new_theme = Theme(
             theme_name=theme_name,
         )
-        print(new_theme)
         active_session.add(new_theme)
         active_session.commit()
         theme = list(active_session.query(Theme).filter(Theme.theme_name == theme_name))[0]
@@ -49,7 +48,7 @@ def get_and_add_event(user_id: int, name_event: str, description_event: str, ima
     post.text = description_event
     # post.image = image_event
     post.theme_id = theme_id
-    post.user_id = user_id
+    post.user_id = get_or_create_user(telegram_id=user_id).id
     date = date.split('.')
     post.datetime_of_event = datetime(year=int(date[-1]), month=int(date[-2]), day=int(date[-3]), hour=0, minute=0)
     post.url = url
@@ -95,7 +94,7 @@ def add_theme_for_user(user_id, theme_id):
     mailingList = active_session.query(MailingList).filter(MailingList.user_id == user_id,
                                                            MailingList.theme_id == theme_id)
     if list(mailingList):
-        return mailingList[0]
+        pass
     else:
         new_mailingList = MailingList(
             user_id=user_id,
@@ -103,10 +102,6 @@ def add_theme_for_user(user_id, theme_id):
         )
         active_session.add(new_mailingList)
         active_session.commit()
-        mailingList = list(
-            active_session.query(MailingList).filter(MailingList.user_id == user_id, MailingList.theme_id == theme_id))[
-            0]
-        return mailingList
 
 
 def create_new_admin(referral_code: str, user: User) -> str:

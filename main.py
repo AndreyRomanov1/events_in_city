@@ -1,8 +1,9 @@
+import config
 from db import db_session
 import telebot
 from telebot import types
 
-bot = telebot.TeleBot('6692859743:AAETsyB1WGxOXaZg6SBeeONZNeeQFGkEEqw')
+bot = telebot.TeleBot(config.BOT_TOKEN)
 
 
 @bot.message_handler(commands=['start'])
@@ -15,8 +16,10 @@ def start(message):
     btn3 = types.InlineKeyboardButton(text='Подписаться на рассылку', callback_data='btn3')
     kb.add(btn1, btn2, btn3)
     bot.send_message(message.chat.id,
-                     'Привет! Я телеграм бот "". Я могу делать рассылки про события в Екатеринбурге или могу рассказать про то, какие мероприятия будут в ближайшие дни. Что ты хочешь сделать?', reply_markup= kb
+                     text='Привет! Я телеграм бот "". Я могу делать рассылки про события в Екатеринбурге или могу рассказать про то, какие мероприятия будут в ближайшие дни. Что ты хочешь сделать?',
+                     reply_markup=kb
                      )
+
 
 @bot.callback_query_handler(func=lambda callback: callback.data)
 def check_callback_data(callback):
@@ -31,12 +34,13 @@ def check_callback_data(callback):
         btn6 = types.InlineKeyboardButton(text='Экология', callback_data='btn6')
         kb.add(btn4, btn5, btn6)
         bot.send_message(callback.message.chat.id,
-                         'Выбирите интересующие темы',
+                         text='Выберите интересующие темы',
                          reply_markup=kb
                          )
 
-bot.polling()
+
 if __name__ == '__main__':
     db_session.global_init(
         sql_type="sqlite"
     )
+    bot.polling()

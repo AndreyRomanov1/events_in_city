@@ -68,14 +68,10 @@ def review(message):
     print(message_to_save)
 
 
-if __name__ == '__main__':
+def bot_thread():
     db_session.global_init(
         sql_type="MYSQL"
     )
-    bot.polling()
-
-
-def bot_thread():
     bot.polling(none_stop=True)
 
 
@@ -84,22 +80,19 @@ def scheduler_thread():
         schedule.run_pending()
         time.sleep(1)
 
+
 def send_weekly_message():
     chat_id = '880739918'
     message = "Привет! Еженедельное сообщение."
     bot.send_message(chat_id, message)
 
-# schedule.every(5).seconds.do(send_weekly_message)
 
 if __name__ == '__main__':
-    db_session.global_init(
-        sql_type="MYSQL"
-    )
-    bot_thread = threading.Thread(target=bot_thread)
     scheduler_thread = threading.Thread(target=scheduler_thread)
+    bot_thread = threading.Thread(target=bot_thread)
 
-    bot_thread.start()
     scheduler_thread.start()
+    bot_thread.start()
 
-    bot_thread.join()
     scheduler_thread.join()
+    bot_thread.join()

@@ -356,7 +356,7 @@ schedule.every().day.at("10:00").do(send_daily_message)
 
 if __name__ == '__main__':
     db_session.global_init(
-        sql_type="MYSQL"
+        sql_type="sqlite"
     )
     questions = [
         Question("Добавьте дату и время в формате дд.мм.гггг чч:мм", []),

@@ -249,6 +249,11 @@ def add_post_to_favourite(callback):
     favourite = Favourite(user_id=user.id, post_id=callback.data.split("_")[-1])
     active_session.add(favourite)
     active_session.commit()
+    bot.send_message(telegram_id, text='Мероприятие было добавлено из избранного')
+    user = get_or_create_user(telegram_id=telegram_id)
+    kb = create_main_keyboard(user=user)
+    text = texts.START_TEXT_FOR_USERS if not user.admin_level else texts.START_TEXT_FOR_ADMIN
+    bot.send_message(telegram_id, text=text, reply_markup=kb)
 
 
 @bot.callback_query_handler(func=lambda callback: 'btnRemoveFromFavourite_' in callback.data)
@@ -260,6 +265,11 @@ def delete_from_favourite(callback):
                                                        Favourite.post_id == callback.data.split("_")[-1]).first()
     active_session.delete(favourite)
     active_session.commit()
+    bot.send_message(telegram_id, text='Мероприятие было удалено из избранного')
+    user = get_or_create_user(telegram_id=telegram_id)
+    kb = create_main_keyboard(user=user)
+    text = texts.START_TEXT_FOR_USERS if not user.admin_level else texts.START_TEXT_FOR_ADMIN
+    bot.send_message(telegram_id, text=text, reply_markup=kb)
 
 
 @bot.callback_query_handler(func=lambda callback: callback.data == 'btn_11_favourite_posts_user')

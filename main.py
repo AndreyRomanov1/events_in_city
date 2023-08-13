@@ -50,7 +50,7 @@ def events_of_today(callback):
     telegram_id = callback.message.chat.id
     all_posts = get_posts_for_period(start_date_of_period=datetime.now(), period_length_in_days=1)
     for post in all_posts:
-        bot.send_message(telegram_id, post.print_post())
+        send_post(telegram_id=telegram_id, post=post, bot=bot)
 
 
 @bot.callback_query_handler(func=lambda callback: callback.data == 'btn_2_event_week')
@@ -59,7 +59,7 @@ def events_of_week(callback):
     telegram_id = callback.message.chat.id
     all_posts = get_posts_for_period(start_date_of_period=datetime.now(), period_length_in_days=7)
     for post in all_posts:
-        bot.send_message(telegram_id, post.print_post())
+        send_post(telegram_id=telegram_id, post=post, bot=bot)
 
 
 @bot.callback_query_handler(func=lambda callback: callback.data == 'btn_3_subscribe_to_theme_for_mailing')
@@ -168,6 +168,7 @@ def handle_question(message):
             try:
                 day, month, year = map(int, message.text.split()[0].split("."))
                 hour, minute = map(int, message.text.split()[1].split(":"))
+                print(day,month,year,hour,minute)
                 task = datetime(
                     year=year,
                     month=month,
@@ -194,14 +195,81 @@ def handle_question(message):
 def create_referral_code_1(callback):
     telegram_id = callback.message.chat.id
     referral_code = create_referral_code(telegram_id=telegram_id, admin_level=1)
-    bot.send_message(telegram_id, text=f"Ваш реферальный код: {referral_code}\nОн работает только на 1 раз")
+    bot.send_message(telegram_id, text=f"Ваш реферальный код: {referral_code}\nОн работает только на 1 раз. \
+    Вы всегда можете забрать права администратора у админов 1 уровня")
 
 
 @bot.callback_query_handler(func=lambda callback: callback.data == 'btn_9_add_admin_2')
 def create_referral_code_2(callback):
     telegram_id = callback.message.chat.id
     referral_code = create_referral_code(telegram_id=telegram_id, admin_level=2)
-    bot.send_message(telegram_id, text=f"Ваш реферальный код: {referral_code}\nОн работает только на 1 раз")
+    bot.send_message(telegram_id, text=f"Ваш реферальный код: {referral_code}\nОн работает только на 1 раз. \
+    Помните, администратора 2 уровня нельзя удалить вручную")
+
+
+@bot.callback_query_handler(func=lambda callback: callback.data == 'btn_10_remove_admin')
+def remove_admin(callback):
+    telegram_id = callback.message.chat.id
+    active_session = db_session.create_session()
+    admins_1_level: list[User] = active_session.query(User).filter(
+        User.admin_level == 1
+    ).all()
+    remove_kb = types.InlineKeyboardMarkup()
+    remove_btns = []
+    for admin in admins_1_level:
+        admin_info = bot.get_chat(admin.telegram_id)
+        print(admin_info)
+        remove_btns.append(types.InlineKeyboardButton(text=str(admin_info.first_name + " " + admin_info.username),
+                                                      callback_data=f'btnRemoveAdmin_{admin.id}'))
+    remove_kb.add(*remove_btns)
+    bot.send_message(telegram_id,
+                     text="Нажмите на имя администратора, которого необходимо удалить",
+                     reply_markup=remove_kb
+                     )
+
+
+@bot.callback_query_handler(func=lambda callback: 'btnRemoveAdmin_' in callback.data)
+def remove_admin_1_level(callback):
+    telegram_id = callback.message.chat.id
+    remove_admin_id = int(callback.data.split("_")[-1])
+    active_session = db_session.create_session()
+    remove_admin: User = active_session.query(User).filter(User.id == remove_admin_id).first()
+    remove_admin.admin_level = 0
+    active_session.commit()
+    bot.send_message(telegram_id, text="Администратор удалён")
+
+
+@bot.callback_query_handler(func=lambda callback: 'btnAddToFavourite_' in callback.data)
+def add_post_to_favourite(callback):
+    telegram_id = callback.message.chat.id
+    user = get_or_create_user(telegram_id=telegram_id)
+    active_session = db_session.create_session()
+    favourite = Favourite(user_id=user.id, post_id=callback.data.split("_")[-1])
+    active_session.add(favourite)
+    active_session.commit()
+
+
+@bot.callback_query_handler(func=lambda callback: 'btnRemoveFromFavourite_' in callback.data)
+def delete_from_favourite(callback):
+    telegram_id = callback.message.chat.id
+    user = get_or_create_user(telegram_id=telegram_id)
+    active_session = db_session.create_session()
+    favourite = active_session.query(Favourite).filter(Favourite.user_id == user.id,
+                                                       Favourite.post_id == callback.data.split("_")[-1]).first()
+    active_session.delete(favourite)
+    active_session.commit()
+
+
+@bot.callback_query_handler(func=lambda callback: callback.data == 'btn_11_favourite_posts_user')
+def favourite_posts_user(callback):
+    telegram_id = callback.message.chat.id
+    user = get_or_create_user(telegram_id=telegram_id)
+    favourite_post_ids = user.get_favourite_post_ids()
+    print(favourite_post_ids)
+    active_session = db_session.create_session()
+    posts = active_session.query(Post).filter(Post.id.in_(favourite_post_ids)).all()
+    for post in posts:
+        send_post(telegram_id=telegram_id, post=post, bot=bot)
 
 
 @bot.callback_query_handler(func=lambda callback: int(callback.data) in get_list_all_theme_ids())
@@ -245,12 +313,10 @@ def scheduler_thread():
 
 
 def send_daily_message():
-    print(1)
     """Ежедневная рассылка"""
     mailing(
         type_mailing=1,
         period_length_in_days=1
-
     )
 
 
@@ -264,19 +330,17 @@ def send_weekly_message():
 
 def mailing(type_mailing: int, period_length_in_days: int):
     """Рассылает всем пользователям списки постов с мероприятиями по интересным для них темам"""
-    print()
     dict_of_users_and_their_posts = create_dict_of_users_and_their_posts(
         users_for_mailing=get_users_for_mailing(type_mailing=type_mailing),
         all_posts=get_posts_for_period(start_date_of_period=datetime.now(), period_length_in_days=period_length_in_days)
     )
     for user, posts in dict_of_users_and_their_posts.items():
         for post in posts:
-            print(user.telegram_id, post.print_post())
-            bot.send_message(user.telegram_id, post.print_post())
+            send_post(telegram_id=user.telegram_id, post=post, bot=bot)
 
 
 schedule.every().monday.at("10:00").do(send_weekly_message)
-schedule.every().day.at("06:27").do(send_daily_message)
+schedule.every().day.at("10:00").do(send_daily_message)
 
 if __name__ == '__main__':
     db_session.global_init(

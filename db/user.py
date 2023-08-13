@@ -2,6 +2,7 @@ import sqlalchemy
 
 from db import db_session
 from db.db_session import SqlAlchemyBase
+from db.favourite import Favourite
 from db.mailing_list import MailingList
 
 
@@ -27,3 +28,10 @@ class User(SqlAlchemyBase):
         ).all())
         users_themes = set(map(lambda x: x.theme_id, users_themes))
         return users_themes
+
+    def get_favourite_post_ids(self) -> list:
+        """Возвращает список постов, отмеченных как избранное"""
+        active_session = db_session.create_session()
+        favourite_posts = list(
+            map(lambda x: x.post_id, active_session.query(Favourite).filter(Favourite.user_id == self.id).all()))
+        return favourite_posts

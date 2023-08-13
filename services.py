@@ -4,6 +4,7 @@ from random import randint
 from telebot import types
 
 from db import db_session
+from db.favourite import Favourite
 from db.mailing_list import MailingList
 from db.post import Post
 from db.theme import Theme
@@ -71,6 +72,9 @@ def create_main_keyboard(user: User) -> types.InlineKeyboardMarkup:
     btn_8_mailing = types.InlineKeyboardButton(text='Рассылка', callback_data='btn_8_mailing')
     btn_3_subscribe_to_theme_for_mailing = types.InlineKeyboardButton(text='Добавить тему для рассылки',
                                                                       callback_data='btn_3_subscribe_to_theme_for_mailing')
+    btn_11_favourite_posts_user = types.InlineKeyboardButton(text='Ваши избранные мероприятия',
+                                                             callback_data='btn_11_favourite_posts_user')
+
     btn_6_add_theme = types.InlineKeyboardButton(text='Добавить тему', callback_data='btn_6_add_theme')
     btn_4_add_event = types.InlineKeyboardButton(text='Добавить мероприятие', callback_data='btn_4_add_event')
 
@@ -78,14 +82,18 @@ def create_main_keyboard(user: User) -> types.InlineKeyboardMarkup:
                                                    callback_data='btn_7_add_admin_1')
     btn_9_add_admin_2 = types.InlineKeyboardButton(text='Добавить админа 2 уровня',
                                                    callback_data='btn_9_add_admin_2')
+    btn_10_remove_admin = types.InlineKeyboardButton(text="Удалить администратора 1 уровня",
+                                                     callback_data="btn_10_remove_admin")
 
     kb.add(btn_1_event_today, btn_2_event_week)
     kb.add(btn_8_mailing, btn_3_subscribe_to_theme_for_mailing)
+    kb.add(btn_11_favourite_posts_user)
 
     if user.admin_level >= 1:
         kb.add(btn_6_add_theme, btn_4_add_event)
     if user.admin_level >= 2:
         kb.add(btn_7_add_admin_1, btn_9_add_admin_2)
+        kb.add(btn_10_remove_admin)
     return kb
 
 
@@ -130,7 +138,7 @@ def create_referral_code(telegram_id: int, admin_level: int):
     return user.referral_code
 
 
-def create_kb_for_add_theme(telegram_id:int) -> types.InlineKeyboardMarkup:
+def create_kb_for_add_theme(telegram_id: int) -> types.InlineKeyboardMarkup:
     active_session = db_session.create_session()
     themes_0 = active_session.query(Theme).filter().all()
     themes_dict = {}
@@ -150,3 +158,18 @@ def create_kb_for_add_theme(telegram_id:int) -> types.InlineKeyboardMarkup:
         button.append(btn)
     kb.add(*button)
     return kb
+
+
+def send_post(telegram_id: int, post: Post, bot):
+    post_kb = types.InlineKeyboardMarkup()
+    active_session = db_session.create_session()
+    user = get_or_create_user(telegram_id=telegram_id)
+    if not list(active_session.query(Favourite).filter(Favourite.post_id == post.id, Favourite.user_id == user.id)):
+        btnAddToFavourite = types.InlineKeyboardButton(text="В избранное", callback_data=f"btnAddToFavourite_{post.id}")
+        post_kb.add(btnAddToFavourite)
+
+    else:
+        btnRemoveFromFavourite = types.InlineKeyboardButton(text="Удалить из избранного",
+                                                            callback_data=f"btnRemoveFromFavourite_{post.id}")
+        post_kb.add(btnRemoveFromFavourite)
+    bot.send_message(telegram_id, post.print_post(), reply_markup=post_kb)

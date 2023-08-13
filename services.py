@@ -42,16 +42,22 @@ def get_and_make_theme(theme_name: str) -> Theme:
         return theme
 
 
-def get_and_add_event(date, user_id: int, name_event: str, description_event: str, image_event,
+def get_and_add_event(telegram_id: int, date, name_event: str, description_event: str,
                       url, theme_id: int):
     post = Post()
     post.title = name_event
     post.text = description_event
-    # post.image = image_event
     post.theme_id = theme_id
-    post.user_id = get_or_create_user(telegram_id=user_id).id
-    date = date.split('.')
-    post.datetime_of_event = datetime(year=int(date[-1]), month=int(date[-2]), day=int(date[-3]), hour=0, minute=0)
+    post.user_id = get_or_create_user(telegram_id=telegram_id).id
+    day, month, year = map(int, date.split()[0].split("."))
+    hour, minute = map(int, date.split()[1].split(":"))
+    task_ddtt = datetime(
+        year=year,
+        month=month,
+        day=day,
+        hour=hour,
+        minute=minute)
+    post.datetime_of_event = task_ddtt
     post.url = url
     db_sess = db_session.create_session()
     db_sess.add(post)

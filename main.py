@@ -180,7 +180,7 @@ def handle_question(message):
             if not match:
                 bot.send_message(telegram_id,
                                  "Из-за некорректного ввода даты или времени пост мероприятия не был сохранён. Попробуйте снова")
-                telegram_id = message.chat.id
+
                 user = get_or_create_user(telegram_id=telegram_id)
                 kb = create_main_keyboard(user=user)
                 text = texts.START_TEXT_FOR_USERS if not user.admin_level else texts.START_TEXT_FOR_ADMIN
@@ -350,7 +350,6 @@ if __name__ == '__main__':
         Question("Добавьте дату и время в формате дд.мм.гггг чч:мм", []),
         Question("Добавьте название", []),
         Question("Добавьте описание", []),
-        Question("Добавьте фото", []),
         Question("Добавьте ссылку(необязательно)", []),
         Question("Выберите тему", get_list_all_theme_ids())
     ]

@@ -41,7 +41,7 @@ def get_and_make_theme(theme_name: str) -> Theme:
         return theme
 
 
-def get_and_add_event(user_id: int, name_event: str, description_event: str, image_event, date,
+def get_and_add_event(date, user_id: int, name_event: str, description_event: str, image_event,
                       url, theme_id: int):
     post = Post()
     post.title = name_event
@@ -144,7 +144,9 @@ def create_kb_for_add_theme(telegram_id:int) -> types.InlineKeyboardMarkup:
     kb = types.InlineKeyboardMarkup(row_width=3)
     btn = types.InlineKeyboardButton(text='Выйти', callback_data='out')
     kb.add(btn)
+    button = []
     for theme in themes:
         btn = types.InlineKeyboardButton(text=themes_dict[theme], callback_data=f'btnTheme_{theme}')
-        kb.add(btn)
+        button.append(btn)
+    kb.add(*button)
     return kb

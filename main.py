@@ -5,9 +5,9 @@ import schedule
 import telebot
 
 import config
+import texts
 from mailing_services import create_dict_of_users_and_their_posts, get_users_for_mailing, get_posts_for_period
 from services import *
-import texts
 
 bot = telebot.TeleBot(config.BOT_TOKEN)
 
@@ -15,20 +15,20 @@ bot = telebot.TeleBot(config.BOT_TOKEN)
 @bot.message_handler(commands=['start'])
 def start(message):
     """Первый запуск бота у пользователя, регистрация пользователя"""
-    tg_id = message.from_user.id
-    user = get_or_create_user(telegram_id=tg_id)
+    telegram_id = message.chat.id
+    user = get_or_create_user(telegram_id=telegram_id)
     kb = create_main_keyboard(user=user)
     text = texts.START_TEXT_FOR_USERS if not user.admin_level else texts.START_TEXT_FOR_ADMIN
-    bot.send_message(message.chat.id, text=text, reply_markup=kb)
+    bot.send_message(telegram_id, text=text, reply_markup=kb)
 
 
 @bot.callback_query_handler(func=lambda callback: callback.data == 'out')
 def start(callback):
-    tg_id = callback.message.chat.id
-    user = get_or_create_user(telegram_id=tg_id)
+    telegram_id = callback.message.chat.id
+    user = get_or_create_user(telegram_id=telegram_id)
     kb = create_main_keyboard(user=user)
     text = texts.START_TEXT_FOR_USERS if not user.admin_level else texts.START_TEXT_FOR_ADMIN
-    bot.send_message(callback.message.chat.id, text=text, reply_markup=kb)
+    bot.send_message(telegram_id, text=text, reply_markup=kb)
 
 
 user_states = {}  # Словарь для отслеживания состояний пользователей
@@ -45,39 +45,28 @@ class Question:
 @bot.callback_query_handler(func=lambda callback: callback.data == 'btn_1_event_today')
 def events_of_today(callback):
     """Отправляет пользователю список постов с мероприятиями на сегодня"""
+    telegram_id = callback.message.chat.id
     all_posts = get_posts_for_period(start_date_of_period=datetime.now(), period_length_in_days=1)
     for post in all_posts:
-        bot.send_message(callback.message.chat.id, post.print_post())
+        bot.send_message(telegram_id, post.print_post())
 
 
 @bot.callback_query_handler(func=lambda callback: callback.data == 'btn_2_event_week')
 def events_of_week(callback):
     """Отправляет пользователю список постов с мероприятиями на неделю вперёд"""
+    telegram_id = callback.message.chat.id
     all_posts = get_posts_for_period(start_date_of_period=datetime.now(), period_length_in_days=7)
     for post in all_posts:
-        bot.send_message(callback.message.chat.id, post.print_post())
+        bot.send_message(telegram_id, post.print_post())
 
 
 @bot.callback_query_handler(func=lambda callback: callback.data == 'btn_3_subscribe_to_theme_for_mailing')
 def add_theme_to_mailing(callback):
     """Добавление темы для рассылки"""
-    active_session = db_session.create_session()
-    themes_0 = active_session.query(Theme).filter().all()
-    themes_dict = {}
-    for theme in themes_0:
-        themes_dict[theme.id] = theme.theme_name
-    themes = set(map(lambda x: x.id, themes_0))
-    user = get_or_create_user(callback.message.chat.id)
-    us_theme = user.get_themes_for_mailing()
-    print(user, themes, us_theme)
-    themes -= us_theme
-    kb = types.InlineKeyboardMarkup(row_width=3)
-    btn = types.InlineKeyboardButton(text='Выйти', callback_data='out')
-    kb.add(btn)
-    for theme in themes:
-        btn = types.InlineKeyboardButton(text=themes_dict[theme], callback_data=f'btnTheme_{theme}')
-        kb.add(btn)
-    bot.send_message(callback.message.chat.id,
+    telegram_id = callback.message.chat.id
+
+    kb = create_kb_for_add_theme(telegram_id=telegram_id)
+    bot.send_message(telegram_id,
                      text='Выберите интересующую тему для рассылки',
                      reply_markup=kb
                      )
@@ -85,26 +74,14 @@ def add_theme_to_mailing(callback):
 
 @bot.callback_query_handler(func=lambda callback: 'btnTheme_' in callback.data)
 def add_theme(callback):
-    user = get_or_create_user(callback.message.chat.id)
+    """Добавление темы для рассылки"""
+    telegram_id = callback.message.chat.id
 
-    add_theme_for_user(user.id, int(str(callback.data).split('_')[-1]))
-    active_session = db_session.create_session()
-    themes_0 = active_session.query(Theme).filter().all()
-    themes_dict = {}
-    for theme in themes_0:
-        themes_dict[theme.id] = theme.theme_name
-    themes = set(map(lambda x: x.id, themes_0))
-    user = get_or_create_user(callback.message.chat.id)
-    us_theme = user.get_themes_for_mailing()
-    print(user, themes, us_theme)
-    themes -= us_theme
-    kb = types.InlineKeyboardMarkup(row_width=3)
-    btn = types.InlineKeyboardButton(text='Выйти', callback_data='out')
-    kb.add(btn)
-    for theme in themes:
-        btn = types.InlineKeyboardButton(text=themes_dict[theme], callback_data=f'btnTheme_{theme}')
-        kb.add(btn)
-    bot.send_message(callback.message.chat.id,
+    user = get_or_create_user(telegram_id)
+    add_theme_for_user(user_id=user.id, theme_id=int(str(callback.data).split('_')[-1]))
+
+    kb = create_kb_for_add_theme(telegram_id=telegram_id)
+    bot.send_message(telegram_id,
                      text='Выберите интересующую тему для рассылки',
                      reply_markup=kb
                      )
@@ -113,7 +90,9 @@ def add_theme(callback):
 @bot.callback_query_handler(func=lambda callback: callback.data == 'btn_6_add_theme')
 def add_new_theme(callback):
     """Создание новой темы"""
-    sent = bot.send_message(callback.message.chat.id, text='Введите название новой темы')
+    telegram_id = callback.message.chat.id
+
+    sent = bot.send_message(telegram_id, text='Введите название новой темы')
     bot.register_next_step_handler(sent, review)
 
 
@@ -121,21 +100,21 @@ def add_new_theme(callback):
 def start_survey(callback):
     """Создание нового поста о мероприятии"""
     global data
-    user_id = callback.message.chat.id
-    data = [user_id]
-    user_states[user_id] = 0  # Установка начального состояния
-    question = questions[user_states[user_id]]
-    bot.send_message(user_id, question.text)
+    telegram_id = callback.message.chat.id
+    data = [telegram_id]
+    user_states[telegram_id] = 0  # Установка начального состояния
+    question = questions[user_states[telegram_id]]
+    bot.send_message(telegram_id, question.text)
 
 
 @bot.message_handler(func=lambda message: user_states.get(message.chat.id) is not None)
 def handle_question(message):
     global data
     data.append(message.text)
-    user_id = message.chat.id
-    user_states[user_id] += 1
-    if user_states[user_id] < len(questions):
-        question = questions[user_states[user_id]]
+    telegram_id = message.chat.id
+    user_states[telegram_id] += 1
+    if user_states[telegram_id] < len(questions):
+        question = questions[user_states[telegram_id]]
         if question.text == 'Выберите тему':
             active_session = db_session.create_session()
             theme = active_session.query(Theme).filter().all()
@@ -144,40 +123,56 @@ def handle_question(message):
             for i in theme:
                 btn = types.InlineKeyboardButton(text=i.theme_name, callback_data=i.id)
                 kb.add(btn)
-            bot.send_message(message.chat.id,
+            bot.send_message(telegram_id,
                              text=question.text,
                              reply_markup=kb
                              )
         else:
-            bot.send_message(user_id, question.text)
+            bot.send_message(telegram_id, question.text)
     else:
-        bot.send_message(user_id, "Пост мероприятия сохранён")
+        bot.send_message(telegram_id, "Пост мероприятия сохранён")
+
+
+@bot.callback_query_handler(func=lambda callback: callback.data == 'btn_7_add_admin_1')
+def create_referral_code_1(callback):
+    telegram_id = callback.message.chat.id
+    referral_code = create_referral_code(telegram_id=telegram_id, admin_level=1)
+    bot.send_message(telegram_id,text=f"Ваш реферальный код: {referral_code}\nОн работает только на 1 раз")
+
+
+@bot.callback_query_handler(func=lambda callback: callback.data == 'btn_9_add_admin_2')
+def create_referral_code_2(callback):
+    telegram_id = callback.message.chat.id
+    referral_code = create_referral_code(telegram_id=telegram_id, admin_level=2)
+    bot.send_message(telegram_id,text=f"Ваш реферальный код: {referral_code}\nОн работает только на 1 раз")
 
 
 @bot.callback_query_handler(func=lambda callback: int(callback.data) in get_list_all_theme_ids())
 def print_all_need(callback):
     global data
+    telegram_id = callback.message.chat.id
     active_session = db_session.create_session()
     theme = active_session.query(Theme).filter(Theme.id == callback.data).first()
     data.append(theme.id)
-    bot.send_message(callback.message.chat.id, text=theme.theme_name)
+    bot.send_message(telegram_id, text=theme.theme_name)
     get_and_add_event(*data)
-    bot.send_message(callback.message.chat.id, text='Ваше мероприятие было добавлено')
+    bot.send_message(telegram_id, text='Ваше мероприятие было добавлено')
 
 
 def review(message):
+    telegram_id = message.chat.id
     message_to_save = message.text
     theme = get_and_make_theme(message_to_save)
-    bot.send_message(message.chat.id, text=' Добавлена тема: ' + str(theme.theme_name))
+    bot.send_message(telegram_id, text=' Добавлена тема: ' + str(theme.theme_name))
 
 
 @bot.message_handler(func=lambda message: message.text and message.text.startswith("/admin "))
-def create_new_admin(message):
+def create_new_admin_handler(message):
     """Добавление уровня администратора при верном реферальном коде"""
-    user = get_or_create_user(telegram_id=message.from_user.id)
-    referral_code = message.text[len("/admin "):]
-    message = create_new_admin(referral_code=referral_code, user=user)
-    bot.send_message(message.chat.id, text=message)
+    telegram_id = message.chat.id
+    referral_code = message.text.split()[1]
+    answer_message = create_new_admin(referral_code=referral_code, telegram_id=telegram_id)
+    bot.send_message(telegram_id, text=answer_message)
 
 
 def bot_thread():

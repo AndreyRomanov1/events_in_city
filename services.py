@@ -1,7 +1,7 @@
 from datetime import datetime
+from random import randint
 
 from telebot import types
-from telebot.types import InlineKeyboardMarkup
 
 from db import db_session
 from db.mailing_list import MailingList
@@ -63,7 +63,7 @@ def get_list_all_theme_ids() -> list[int]:
     return themes
 
 
-def create_main_keyboard(user: User) -> InlineKeyboardMarkup:
+def create_main_keyboard(user: User) -> types.InlineKeyboardMarkup:
     kb = types.InlineKeyboardMarkup(row_width=3)
     btn_1_event_today = types.InlineKeyboardButton(text='Мероприятия на сегодня', callback_data='btn_1_event_today')
     btn_2_event_week = types.InlineKeyboardButton(text='Мероприятия на неделю', callback_data='btn_2_event_week')
@@ -85,7 +85,7 @@ def create_main_keyboard(user: User) -> InlineKeyboardMarkup:
     if user.admin_level >= 1:
         kb.add(btn_6_add_theme, btn_4_add_event)
     if user.admin_level >= 2:
-        kb.add(btn_7_add_admin_1,btn_9_add_admin_2)
+        kb.add(btn_7_add_admin_1, btn_9_add_admin_2)
     return kb
 
 
@@ -104,8 +104,9 @@ def add_theme_for_user(user_id, theme_id):
         active_session.commit()
 
 
-def create_new_admin(referral_code: str, user: User) -> str:
+def create_new_admin(referral_code: str, telegram_id: int) -> str:
     active_session = db_session.create_session()
+    user = active_session.query(User).filter(User.telegram_id == telegram_id).first()
     referral_user = active_session.query(User).filter(User.referral_code == referral_code)
     if list(referral_user):
         referral_user: User = referral_user[0]
@@ -115,6 +116,35 @@ def create_new_admin(referral_code: str, user: User) -> str:
         referral_user.referral_code = None
         user.admin_level = int(referral_code.split("_")[1])
         user.referral_user = referral_user.id
+        active_session.commit()
         return f"Теперь вы администратор {referral_code.split('_')[1]} уровня"
     else:
         return "Вы уже администратор этого уровня или выше"
+
+
+def create_referral_code(telegram_id: int, admin_level: int):
+    active_session = db_session.create_session()
+    user = active_session.query(User).filter(User.telegram_id == telegram_id).first()
+    user.referral_code = f"{user.telegram_id}_{admin_level}_{randint(100000, 999999)}"
+    active_session.commit()
+    return user.referral_code
+
+
+def create_kb_for_add_theme(telegram_id:int) -> types.InlineKeyboardMarkup:
+    active_session = db_session.create_session()
+    themes_0 = active_session.query(Theme).filter().all()
+    themes_dict = {}
+    for theme in themes_0:
+        themes_dict[theme.id] = theme.theme_name
+    themes = set(map(lambda x: x.id, themes_0))
+    user = get_or_create_user(telegram_id)
+    us_theme = user.get_themes_for_mailing()
+    print(user, themes, us_theme)
+    themes -= us_theme
+    kb = types.InlineKeyboardMarkup(row_width=3)
+    btn = types.InlineKeyboardButton(text='Выйти', callback_data='out')
+    kb.add(btn)
+    for theme in themes:
+        btn = types.InlineKeyboardButton(text=themes_dict[theme], callback_data=f'btnTheme_{theme}')
+        kb.add(btn)
+    return kb

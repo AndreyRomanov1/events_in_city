@@ -1,5 +1,3 @@
-from random import randint
-
 import sqlalchemy
 
 from db import db_session
@@ -15,7 +13,7 @@ class User(SqlAlchemyBase):
     telegram_id = sqlalchemy.Column(sqlalchemy.Integer, unique=True)
     mailing_frequency = sqlalchemy.Column(sqlalchemy.Integer, default=0)
     admin_level = sqlalchemy.Column(sqlalchemy.Integer, default=0)
-    referral_code = sqlalchemy.Column(sqlalchemy.Integer, nullable=True)
+    referral_code = sqlalchemy.Column(sqlalchemy.String(1000), nullable=True)
     referral_user = sqlalchemy.Column(sqlalchemy.Integer, nullable=True)
 
     def __repr__(self):
@@ -29,6 +27,3 @@ class User(SqlAlchemyBase):
         ).all())
         users_themes = set(map(lambda x: x.theme_id, users_themes))
         return users_themes
-
-    def create_referral_code(self, admin_level: int) -> None:
-        self.referral_code = f"{self.telegram_id}_{admin_level}_{randint(100000, 999999)}"

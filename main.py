@@ -49,6 +49,7 @@ def events_of_today(callback):
     """Отправляет пользователю список постов с мероприятиями на сегодня"""
     telegram_id = callback.message.chat.id
     all_posts = get_posts_for_period(start_date_of_period=datetime.now(), period_length_in_days=1)
+    bot.send_message(telegram_id, text="Мероприятия на сегодня")
     for post in all_posts:
         send_post(telegram_id=telegram_id, post=post, bot=bot)
 
@@ -58,6 +59,7 @@ def events_of_week(callback):
     """Отправляет пользователю список постов с мероприятиями на неделю вперёд"""
     telegram_id = callback.message.chat.id
     all_posts = get_posts_for_period(start_date_of_period=datetime.now(), period_length_in_days=7)
+    bot.send_message(telegram_id, text="Мероприятия на неделю")
     for post in all_posts:
         send_post(telegram_id=telegram_id, post=post, bot=bot)
 
